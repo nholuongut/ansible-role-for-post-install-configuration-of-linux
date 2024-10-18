@@ -1,0 +1,84 @@
+---
+# linux_postinstall libvirt
+
+- name: "libvirt Debug"
+  vars:
+    msg: |-
+      lp_libvirt_guests_enable: {{ lp_libvirt_guests_enable }}
+      lp_libvirt_libvirtd_enable: {{ lp_libvirt_libvirtd_enable }}
+      lp_libvirt_conf_owner: {{ lp_libvirt_conf_owner }}
+      lp_libvirt_conf_group: {{ lp_libvirt_conf_group }}
+      lp_libvirt_conf_mode: {{ lp_libvirt_conf_mode }}
+      lp_libvirt_conf_dir: {{ lp_libvirt_conf_dir }}
+      lp_libvirt_packages:
+        {{ lp_libvirt_packages|to_nice_yaml|indent(2) }}
+      lp_libvirt_conf:
+        {{ lp_libvirt_conf|to_nice_yaml|indent(2) }}
+  ansible.builtin.debug:
+    msg: "{{ '{}'.format(msg) }}"
+  when: lp_libvirt_debug|bool
+  tags: lp_libvirt_debug
+
+- name: "libvirt: Install packages"
+  ansible.builtin.include_tasks: fn/install-package.yml
+  loop: "{{ lp_libvirt_packages }}"
+  tags: lp_libvirt_pkg
+
+- name: "libvirt: Configure {{ lp_libvirt_conf_dir }}"
+  ansible.builtin.lineinfile:
+    dest: "{{ lp_libvirt_conf_dir }}/{{ item.0.key }}"
+    regexp: '^\s*{{ item.1.0 }}(\s|=)(.*)$'
+    line: "{{ item.1.0 }} = {{ item.1.1 }}"
+    state: "{{ item.1.2|default('present') }}"
+    backup: "{{ lp_backup_conf }}"
+    create: true
+    owner: "{{ item.0.owner|default('root') }}"
+    group: "{{ item.0.group|default('root') }}"
+    mode: "{{ item.0.mode|default('0644') }}"
+  loop: "{{ query('subelements',
+                  lp_libvirt_conf|dict2items,
+                  'value.conf',
+                  {'skip_missing': True}) }}"
+  loop_control:
+    label: "{{ item.0.key }}
+            {{ item.1.0 }}: {{ item.1.1 }}
+            {{ item.1.2|default('present') }}"
+  notify:
+    - reload libvirtd
+    - reload libvirt_guests
+  tags: lp_libvirt_conf
+
+- name: "libvirt: Start and enable {{ lp_libvirt_libvirtd_service }}"
+  ansible.builtin.service:
+    name: "{{ lp_libvirt_libvirtd_service }}"
+    state: started
+    enabled: true
+  when: lp_libvirt_libvirtd_enable|bool
+  tags: lp_libvirt_libvirtd_service
+
+- name: "libvirt: Stop and disable {{ lp_libvirt_libvirtd_service }}"
+  ansible.builtin.service:
+    name: "{{ lp_libvirt_libvirtd_service }}"
+    state: stopped
+    enabled: false
+  when: not lp_libvirt_libvirtd_enable|bool
+  tags: lp_libvirt_libvirtd_service
+
+- name: "libvirt: Start and enable {{ lp_libvirt_guests_service }}"
+  ansible.builtin.service:
+    name: "{{ lp_libvirt_guests_service }}"
+    state: started
+    enabled: true
+  when: lp_libvirt_guests_enable|bool
+  tags: lp_libvirt_guests_service
+
+- name: "libvirt: Stop and disable {{ lp_libvirt_guests_service }}"
+  ansible.builtin.service:
+    name: "{{ lp_libvirt_guests_service }}"
+    state: stopped
+    enabled: false
+  when: not lp_libvirt_guests_enable|bool
+  tags: lp_libvirt_guests_service
+
+# EOF
+...

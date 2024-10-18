@@ -1,0 +1,33 @@
+---
+# linux_postinstall wpa_gui
+
+# Note: Disable NetworkManager before installing wpagui
+#
+# Example:
+#
+# lp_nm: true
+# lp_nm_install: false
+# lp_nm_enable: false
+# lp_nm_conf:
+#     - {key: managed, val: 'false'}
+# lp_nm_mask: true
+
+- name: "wpagui: Debug"
+  vars:
+    msg: |-
+      lp_wpagui_install: {{ lp_wpagui_install }}
+      lp_wpagui_packages:
+        {{ lp_wpagui_packages|to_nice_yaml|indent(2) }}
+  ansible.builtin.debug:
+    msg: "{{ '{}'.format(msg) }}"
+  when: lp_wpagui_debug|bool
+  tags: lp_wpagui_debug
+
+- name: "wpagui: Install packages"
+  ansible.builtin.include_tasks: fn/install-package.yml
+  loop: "{{ lp_wpagui_packages }}"
+  when: lp_wpagui_install|bool
+  tags: lp_wpagui_packages
+
+# EOF
+...

@@ -1,0 +1,16 @@
+---
+
+- name: reload sshd
+  ansible.builtin.service:
+    name: "{{ lp_sshd_service }}"
+    state: reloaded
+  when: lp_sshd_enable|bool
+
+- name: restart sshd
+  ansible.builtin.service:
+    name: "{{ lp_sshd_service }}"
+    state: restarted
+  when: lp_sshd_enable|bool
+
+# EOF
+...

@@ -1,0 +1,11 @@
+---
+
+task_iptables_seealso:
+  handlers:
+    - iptables
+  templates:
+    - iptables_restore
+    - default_iptables
+    - router1_iptables
+
+...

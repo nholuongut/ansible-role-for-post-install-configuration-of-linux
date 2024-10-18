@@ -1,0 +1,9 @@
+---
+
+- name: load sysctl settings
+  ansible.builtin.command:
+    cmd: >
+      /sbin/sysctl -p /etc/sysctl.conf
+
+# EOF
+...

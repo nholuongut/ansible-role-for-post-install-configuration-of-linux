@@ -1,0 +1,9 @@
+---
+
+- name: set hostname
+  ansible.builtin.command:
+    cmd: >
+      /sbin/sysctl kernel.hostname={{ hostname }}
+
+# EOF
+...

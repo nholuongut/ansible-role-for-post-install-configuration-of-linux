@@ -1,0 +1,53 @@
+---
+# linux_postinstall timesyncd
+
+- name: "timesyncd: Debug"
+  vars:
+    msg: |-
+      lp_timesyncd: {{ lp_timesyncd }}
+      lp_timesyncd_ntp: {{ lp_timesyncd_ntp }}
+      lp_timesyncd_fallbackntp: {{ lp_timesyncd_fallbackntp }}
+      lp_timesyncd_rootdistancemaxsec: {{ lp_timesyncd_rootdistancemaxsec }}
+      lp_timesyncd_pollintervalminsec: {{ lp_timesyncd_pollintervalminsec }}
+      lp_timesyncd_pollintervalmaxsec: {{ lp_timesyncd_pollintervalmaxsec }}
+  ansible.builtin.debug:
+    msg: "{{ '{}'.format(msg) }}"
+  when: lp_timesyncd_debug|bool
+  tags: lp_timesyncd_debug
+
+- name: "timesyncd: Configure /etc/systemd/timesyncd.conf"
+  ansible.builtin.template:
+    src: timesyncd.conf.j2
+    dest: /etc/systemd/timesyncd.conf
+    owner: root
+    group: root
+    mode: "0644"
+    backup: "{{ lp_backup_conf }}"
+  notify: restart timesyncd
+  tags: lp_timesyncd_conf
+
+- name: "timesyncd: Enable and start timesyncd"
+  ansible.builtin.service:
+    name: "{{ lp_timesyncd_service }}"
+    state: started
+    enabled: true
+  when: lp_timesyncd_enable|bool
+  tags: lp_timesyncd_service
+
+- name: "timesyncd: Disable and stop timesyncd"
+  ansible.builtin.service:
+    name: "{{ lp_timesyncd_service }}"
+    state: stopped
+    enabled: false
+  when: not lp_timesyncd_enable|bool
+  tags: lp_timesyncd_service
+
+# Notes on CentOS
+# * systemd compiled without timesyncd service in CentOS 7 ?
+# * use ntpd or chrony only ?
+# https://unix.stackexchange.com/questions/286708/
+# centos-7-2-minimal-time-synchronization-timedated-and-or-ntpd-chrony
+# https://www.freedesktop.org/wiki/Software/systemd/timedated/
+
+# EOF
+...

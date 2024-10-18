@@ -1,0 +1,83 @@
+---
+# linux_postinstall gpg
+
+- name: "gpg: Debug"
+  vars:
+    msg: |-
+      lp_gpg_install: {{ lp_gpg_install }}
+      lp_gpg_packages:
+        {{ lp_gpg_packages|to_nice_yaml|indent(2) }}
+      lp_gpg_packages_extra:
+        {{ lp_gpg_packages_extra|to_nice_yaml|indent(2) }}
+      lp_gpg_conf_default:
+        {{ lp_gpg_conf_default|to_yaml|indent(2) }}
+      lp_gpg_conf:
+        {{ lp_gpg_conf|to_yaml|indent(2) }}
+      lp_gpg_agent_conf_default:
+        {{ lp_gpg_agent_conf_default|to_yaml|indent(2) }}
+      lp_gpg_agent_conf:
+        {{ lp_gpg_agent_conf|to_yaml|indent(2) }}
+      lp_gpg_dirmngr_conf_default:
+        {{ lp_gpg_dirmngr_conf_default|to_yaml|indent(2) }}
+      lp_gpg_dirmngr_conf:
+      {{ lp_gpg_dirmngr_conf|to_yaml|indent(2) }}
+  ansible.builtin.debug:
+    msg: "{{ '{}'.format(msg) }}"
+  when: lp_gpg_debug|bool
+  tags: lp_gpg_debug
+
+- name: "gpg: Install packages"
+  ansible.builtin.include_tasks: fn/install-package.yml
+  loop:
+    - "{{ lp_gpg_packages }}"
+    - "{{ lp_gpg_packages_extra }}"
+  when: lp_gpg_install|bool
+  tags: lp_gpg_packages
+
+- name: "gpg: Configure gpg.conf"
+  ansible.builtin.template:
+    src: gpg.conf.j2
+    dest: "{{ item.dest|default('/home/' ~ item.owner ~ '/.gnupg/gpg.conf') }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: "0600"
+    backup: "{{ lp_backup_conf }}"
+  loop: "{{ lp_gpg_conf }}"
+  loop_control:
+    label: "{{ item.owner }}"
+  tags: lp_gpg_conf
+
+- name: "gpg: Configure gpg-agent.conf"
+  ansible.builtin.template:
+    src: gpg-agent.conf.j2
+    dest: "{{ item.dest|default('/home/' ~ item.owner ~ '/.gnupg/gpg-agent.conf') }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: "0600"
+    backup: "{{ lp_backup_conf }}"
+  loop: "{{ lp_gpg_agent_conf }}"
+  loop_control:
+    label: "{{ item.owner }}"
+  register: lp_gpg_agent_conf_changes
+  notify: gpgconf kill gpg-agent
+  tags: lp_gpg_agent_conf
+
+- name: "gpg: Configure dirmngr.conf"
+  ansible.builtin.template:
+    src: gpg-dirmngr.conf.j2
+    dest: "{{ item.dest|default('/home/' ~ item.owner ~ '/.gnupg/dirmngr.conf') }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: "0600"
+    backup: "{{ lp_backup_conf }}"
+  loop: "{{ lp_gpg_dirmngr_conf }}"
+  loop_control:
+    label: "{{ item.owner }}"
+  register: lp_gpg_dirmngr_conf_changes
+  notify: gpgconf kill dirmngr
+  tags: lp_gpg_dirmngr_conf
+
+# TODO: import keys
+
+# EOF
+...

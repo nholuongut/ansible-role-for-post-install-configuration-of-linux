@@ -1,0 +1,16 @@
+---
+
+- name: restart smart
+  ansible.builtin.service:
+    name: "{{ lp_smart_service }}"
+    state: restarted
+  when: lp_smart_enable|bool
+
+- name: reload smart
+  ansible.builtin.service:
+    name: "{{ lp_smart_service }}"
+    state: reloaded
+  when: lp_smart_enable|bool
+
+# EOF
+...

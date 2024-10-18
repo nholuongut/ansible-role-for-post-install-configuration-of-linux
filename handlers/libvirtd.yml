@@ -1,0 +1,28 @@
+---
+
+- name: restart libvirtd
+  ansible.builtin.service:
+    name: "{{ lp_libvirt_libvirtd_service }}"
+    state: restarted
+  when: lp_libvirt_libvirtd_enable|bool
+
+- name: reload libvirtd
+  ansible.builtin.service:
+    name: "{{ lp_libvirt_libvirtd_service }}"
+    state: reloaded
+  when: lp_libvirt_libvirtd_enable|bool
+
+- name: restart libvirt_guests
+  ansible.builtin.service:
+    name: "{{ lp_libvirt_guests_service }}"
+    state: restarted
+  when: lp_libvirt_libvirtd_enable|bool
+
+- name: reload libvirt_guests
+  ansible.builtin.service:
+    name: "{{ lp_libvirt_guests_service }}"
+    state: reloaded
+  when: lp_libvirt_libvirtd_enable|bool
+
+# EOF
+...

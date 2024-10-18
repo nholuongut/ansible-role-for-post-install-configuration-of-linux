@@ -1,0 +1,10 @@
+---
+
+- name: update initramfs
+  listen: update initrd
+  ansible.builtin.command:
+    cmd: >
+      update-initramfs -k all -u
+
+# EOF
+...

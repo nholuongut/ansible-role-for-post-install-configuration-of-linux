@@ -1,0 +1,10 @@
+---
+
+- name: reload nfsd
+  ansible.builtin.systemd:
+    name: "{{ lp_nfsd_reload_service }}"
+    state: reloaded
+  when: lp_nfsd_enable|bool
+
+# EOF
+...

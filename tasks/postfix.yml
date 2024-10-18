@@ -1,0 +1,46 @@
+---
+# linux_postinstall postfix
+
+- name: "postfix: Debug"
+  vars:
+    msg: |-
+      ansible_os_family: {{ ansible_os_family }}
+      lp_postfix_service: {{ lp_postfix_service }}
+      lp_postfix_enable: {{ lp_postfix_enable }}
+      lp_postfix_main_conf:
+        {{ lp_postfix_main_conf|to_yaml|indent(2) }}
+  ansible.builtin.debug:
+    msg: "{{ '{}'.format(msg) }}"
+  when: lp_postfix_debug|bool
+  tags: lp_postfix_debug
+
+- name: "postfix: Configure /etc/postfix/main.cf"
+  ansible.builtin.lineinfile:
+    dest: /etc/postfix/main.cf
+    regexp: '^\s*{{ item.key }}\s*=\s*(.*)$'
+    line: "{{ item.key }} = {{ item.value }}"
+    backup: "{{ lp_backup_conf }}"
+    create: true
+    mode: "0644"
+  loop: "{{ lp_postfix_main_conf }}"
+  notify: reload postfix
+  tags: lp_postfix_conf
+
+- name: "postfix: Enable and start postfix"
+  ansible.builtin.service:
+    name: "{{ lp_postfix_service }}"
+    enabled: true
+    state: started
+  when: lp_postfix_enable|bool
+  tags: lp_postfix_service
+
+- name: "postfix: Disable and stop postfix"
+  ansible.builtin.service:
+    name: "{{ lp_postfix_service }}"
+    enabled: false
+    state: stopped
+  when: not lp_postfix_enable|bool
+  tags: lp_postfix_service
+
+# EOF
+...

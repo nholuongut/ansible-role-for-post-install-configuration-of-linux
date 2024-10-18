@@ -1,0 +1,12 @@
+---
+# linux_postinstall authorized_keys
+
+- name: "authorized_key: Configure authorized_keys"
+  ansible.builtin.authorized_key:
+    user: "{{ item.user }}"
+    key: "{{ item.key }}"
+    manage_dir: true
+  loop: "{{ lp_authorized_keys }}"
+
+# EOF
+...

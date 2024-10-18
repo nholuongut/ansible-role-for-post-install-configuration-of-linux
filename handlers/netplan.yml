@@ -1,0 +1,10 @@
+---
+
+- name: netplan apply
+  ansible.builtin.command:
+    cmd: >
+      netplan apply
+  when: lp_netplan|bool
+
+# EOF
+...

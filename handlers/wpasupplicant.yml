@@ -1,0 +1,42 @@
+---
+
+- name: reconfigure wpa_supplicant
+  ansible.builtin.service:
+    name: "{{ my_service }}"
+    state: restarted
+  loop: "{{ lp_wpasupplicant_conf_changes.results }}"
+  loop_control:
+    label: "{{ my_service }}"
+  vars:
+    my_dev: "{{ item.item.dev }}"
+    my_service: "{{ lp_wpasupplicant_service[item.item.type|default('default')] }}"
+  when:
+    - item.changed|bool
+    - not lp_wpasupplicant_conf_only|bool
+    - item.item.enabled|default(true)
+
+# [TODO] Wait for OK result. Error: 'RECONFIGURE' command timed out.
+# shell: >
+#    [ -S {{ lp_wpasupplicant_conf_ctrl_interface }}/{{ item.item.dev }} ] &&
+#    wpa_cli -p {{ lp_wpasupplicant_conf_ctrl_interface }}
+#            -i {{ item.item.dev }} reconfigure ||
+#    exit 0
+
+- name: reload wpa_supplicant service
+  ansible.builtin.service:
+    name: "{{ item.item.0.service }}"
+    state: reloaded
+  loop: "{{ lp_wpasupplicant_service_conf_changes.results }}"
+  loop_control:
+    label: "{{ item.item.0.path }}/{{ item.item.0.service }}"
+  when:
+    - item.changed|bool
+    - not lp_wpasupplicant_service_conf_only|bool
+    - item.item.enabled|default(true)
+
+# [TODO] Restart running wpa_supplicant-*.service services
+# The command below successfully restarts the service in 20.04
+# shell> systemctl restart wpa_supplicant-nl80211@wlan0.service
+
+# EOF
+...

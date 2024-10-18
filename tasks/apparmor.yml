@@ -1,0 +1,79 @@
+---
+# linux_postinstall apparmor
+
+- name: "apparmor: Install packages"
+  ansible.builtin.include_tasks: fn/install-package.yml
+  loop: "{{ lp_apparmor_packages }}"
+  tags: lp_apparmor_packages
+
+- name: "apparmor: Create list of profiles"
+  block:
+    - name: "apparmor: List profiles"
+      ansible.builtin.shell:
+        cmd: >
+          aa-status --json | jq .profiles | jq to_entries
+      register: result
+      changed_when: false
+    - name: "apparmor: Create list of enforced profiles"
+      ansible.builtin.set_fact:
+        lp_apparmor_profiles_enforce: "{{ lp_apparmor_profiles_enforce|default([]) + [item.key] }}"
+      loop: "{{ result.stdout|default([]) }}"
+      when: item.value == 'enforce'
+    - name: "apparmor: Create list of complained profiles"
+      ansible.builtin.set_fact:
+        lp_apparmor_profiles_complain: "{{ lp_apparmor_profiles_complain|default([]) + [item.key] }}"
+      loop: "{{ result.stdout|default([]) }}"
+      when: item.value == 'complain'
+    - name: "apparmor: Debug: List enforced profiles"
+      ansible.builtin.debug:
+        var: lp_apparmor_profiles_enforce
+      when: lp_debug|bool
+    - name: "apparmor: Debug: List complained profiles"
+      ansible.builtin.debug:
+        var: lp_apparmor_profiles_complain
+      when: lp_debug|bool
+  tags: lp_apparmor_profiles
+
+- name: "apparmor: Disable profiles"
+  ansible.builtin.command:
+    cmd: >
+      aa-disable {{ item }}
+  loop: "{{ lp_apparmor_disable }}"
+  when: item in lp_apparmor_profiles_enforce|default([]) or
+        item in lp_apparmor_profiles_complain|default([])
+  tags: lp_apparmor_disable
+
+- name: "apparmor: Enforce profiles"
+  ansible.builtin.command:
+    cmd: >
+      aa-enforce {{ item }}
+  loop: "{{ lp_apparmor_enforce }}"
+  when: item not in lp_apparmor_profiles_enforce|default([])
+  tags: lp_apparmor_enforce
+
+- name: "apparmor: Complain profiles"
+  ansible.builtin.command:
+    cmd: >
+      aa-complain {{ item }}
+  loop: "{{ lp_apparmor_complain }}"
+  when: item not in lp_apparmor_profiles_complain|default([])
+  tags: lp_apparmor_enforce
+
+- name: "apparmor: Start and enable apparmor"
+  ansible.builtin.service:
+    name: apparmor
+    state: started
+    enabled: true
+  when: lp_apparmor|bool
+  tags: lp_apparmor_service
+
+- name: "apparmor: Stop and disable apparmor"
+  ansible.builtin.service:
+    name: apparmor
+    state: stopped
+    enabled: false
+  when: not lp_apparmor|bool
+  tags: lp_apparmor_service
+
+# EOF
+...

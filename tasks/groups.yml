@@ -1,0 +1,23 @@
+---
+# linux_postinstall groups
+
+- name: "groups: Debug"
+  vars:
+    msg: |-
+      lp_groups:
+        {{ lp_groups|to_nice_yaml|indent(2) }}
+  ansible.builtin.debug:
+    msg: "{{ '{}'.format(msg) }}"
+  when: lp_groups_debug|bool
+  tags: lp_groups_debug
+
+- name: "groups: Manage groups"
+  ansible.builtin.group:
+    name: "{{ item.name }}"
+    gid: "{{ item.gid|default(omit) }}"
+    state: "{{ item.state|default(omit) }}"
+    system: "{{ item.system|default(omit) }}"
+  loop: "{{ lp_groups }}"
+
+# EOF
+...

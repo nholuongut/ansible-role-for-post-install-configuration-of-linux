@@ -1,0 +1,69 @@
+---
+# linux_postinstall virtualbox
+
+- name: "virtualbox: Debug"
+  vars:
+    msg: |-
+      ansible_lsb.description: {{ ansible_lsb.codename }}
+      lp_virtualbox: {{ lp_virtualbox }}
+      lp_virtualbox_ignore_errors: {{ lp_virtualbox_ignore_errors }}
+      lp_virtualbox_keys: {{ lp_virtualbox_keys }}
+      lp_virtualbox_repos: {{ lp_virtualbox_repos }}
+      lp_virtualbox_packages:
+        {{ lp_virtualbox_packages|to_nice_yaml|indent(2) }}
+      lp_virtualbox_services:
+        {{ lp_virtualbox_services|to_nice_yaml|indent(2) }}
+  ansible.builtin.debug:
+    msg: "{{ '{}'.format(msg) }}"
+  when: lp_virtualbox_debug|bool
+  tags: lp_virtualbox_debug
+
+# TODO: assert lp_virtualbox_modules are loaded
+#       when: lp_virtualbox|bool
+
+- name: "virtualbox: Add signing key of VirtualBox"
+  ansible.builtin.apt_key:
+    url: "{{ item }}"
+    state: present
+  loop: "{{ lp_virtualbox_keys }}"
+  register: result
+  retries: "{{ lp_install_retries }}"
+  until: result is succeeded
+  delay: "{{ lp_install_delay }}"
+  ignore_errors: "{{ lp_virtualbox_ignore_errors }}"  # noqa ignore-errors
+  tags: lp_virtualbox_keys
+
+- name: "virtualbox: Add repository of VirtualBox"
+  ansible.builtin.apt_repository:
+    repo: "{{ item }}"
+    state: present
+  loop: "{{ lp_virtualbox_repos }}"
+  ignore_errors: "{{ lp_virtualbox_ignore_errors }}"  # noqa ignore-errors
+  tags: lp_virtualbox_repos
+
+- name: "virtualbox: Install VirtualBox packages"
+  ansible.builtin.include_tasks: fn/install-package.yml
+  loop: "{{ lp_virtualbox_packages }}"
+  ignore_errors: "{{ lp_virtualbox_ignore_errors }}"  # noqa ignore-errors
+  tags: lp_virtualbox_pkg
+
+- name: "virtualbox: Enable and start services"
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop: "{{ lp_virtualbox_services }}"
+  when: lp_virtualbox_enable|bool
+  tags: lp_virtualbox_services
+
+- name: "virtualbox: Disable and stop services"
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop: "{{ lp_virtualbox_services }}"
+  when: not lp_virtualbox_enable|bool
+  tags: lp_virtualbox_services
+
+# EOF
+...

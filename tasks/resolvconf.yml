@@ -1,0 +1,60 @@
+---
+# linux_postinstall resolvconf
+
+- name: "resolvconf: Debug"
+  vars:
+    msg: |-
+      lp_resolvconf_service: {{ lp_resolvconf_service }}
+      lp_resolvconf_enable: {{ lp_resolvconf_enable }}
+      lp_package_state: {{ lp_package_state }}
+      lp_resolvconf_install: {{ lp_resolvconf_install }}
+      lp_resolvconf_packages:
+        {{ lp_resolvconf_packages|to_nice_yaml|indent(2) }}
+      lp_resolvconf_conf_owner: {{ lp_resolvconf_conf_owner }}
+      lp_resolvconf_conf_group: {{ lp_resolvconf_conf_group }}
+      lp_resolvconf_conf_mode: {{ lp_resolvconf_conf_mode }}
+      lp_resolvconf_conf:
+        {{ lp_resolvconf_conf|to_nice_yaml|indent(2) }}
+      lp_resolvconf_confd_head:
+        {{ lp_resolvconf_confd_head|to_yaml|indent(2) }}
+  ansible.builtin.debug:
+    msg: "{{ '{}'.format(msg) }}"
+  when: lp_resolvconf_debug|bool
+  tags: lp_resolvconf_debug
+
+- name: "resolvconf: Install packages"
+  ansible.builtin.include_tasks: fn/install-package.yml
+  loop: "{{ lp_resolvconf_packages }}"
+  when: lp_resolvconf_install|bool
+  tags: lp_resolvconf_packages
+
+- name: "resolvconf: Configure lp_resolvconf_conf"
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+    backup: "{{ lp_backup_conf }}"
+  loop: "{{ lp_resolvconf_conf }}"
+  notify: restart resolvconf
+  tags: lp_resolvconf_confd_head
+
+- name: "resolvconf: Enable and start resolvconf"
+  ansible.builtin.service:
+    name: "{{ lp_resolvconf_service }}"
+    enabled: true
+    state: started
+  when: lp_resolvconf_enable|bool
+  tags: lp_resolvconf_service
+
+- name: "resolvconf: Disable and stop resolvconf"
+  ansible.builtin.service:
+    name: "{{ lp_resolvconf_service }}"
+    enabled: false
+    state: stopped
+  when: not lp_resolvconf_enable|bool
+  tags: lp_resolvconf_service
+
+# EOF
+...
